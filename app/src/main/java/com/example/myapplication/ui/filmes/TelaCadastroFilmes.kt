@@ -39,10 +39,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.data.local.AppDatabase
 import com.example.myapplication.data.local.Filmes
-import com.example.myapplication.data.repository.atualizarFilme
-import com.example.myapplication.data.repository.buscarFilmes
-import com.example.myapplication.data.repository.deletarFilme
-import com.example.myapplication.data.repository.inserirFilme
+//import com.example.myapplication.data.repository.atualizarFilme
+//import com.example.myapplication.data.repository.buscarFilmes
+//import com.example.myapplication.data.repository.deletarFilme
+//import com.example.myapplication.data.repository.inserirFilme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -68,7 +68,7 @@ fun TelaCadastroFilmes() {
 
     // Carrega os filmes na primeira vez que a tela é exibida
     LaunchedEffect(Unit) {
-        filmes = buscarFilmes(filmesDao)
+        //filmes = buscarFilmes(filmesDao)
     }
 
     Column(
@@ -109,18 +109,18 @@ fun TelaCadastroFilmes() {
                                 // Verifica se está editando ou adicionando
                                 if (filmeEmEdicao == null) {
                                     // Adiciona um novo filme
-                                    inserirFilme(nome, descricao, filmesDao)
+                                    //inserirFilme(nome, descricao, filmesDao)
                                 } else {
                                     // Atualiza um filme existente
                                     val filmeAtualizado = filmeEmEdicao!!.copy(nome = nome, desc = descricao)
-                                    atualizarFilme(filmeAtualizado, filmesDao)
+                                    //atualizarFilme(filmeAtualizado, filmesDao)
                                 }
 
                                 // Limpa os campos, reseta o estado de edição e recarrega a lista
                                 nome = ""
                                 descricao = ""
                                 filmeEmEdicao = null
-                                filmes = buscarFilmes(filmesDao)
+                                //filmes = buscarFilmes(filmesDao)
                             }
                         }
                     }
@@ -145,8 +145,8 @@ fun TelaCadastroFilmes() {
                     // Ação para o botão de deletar
                     onDelete = { filmeParaDeletar ->
                         CoroutineScope(Dispatchers.IO).launch {
-                            deletarFilme(filmeParaDeletar, filmesDao)
-                            filmes = buscarFilmes(filmesDao)
+                            //deletarFilme(filmeParaDeletar, filmesDao)
+                            //filmes = buscarFilmes(filmesDao)
                         }
                     }
                 )
