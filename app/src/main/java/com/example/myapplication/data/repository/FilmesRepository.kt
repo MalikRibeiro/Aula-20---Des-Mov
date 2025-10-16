@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 class FilmesRepository (private val filmesDAO: FilmesDAO) {
 
-    suspend fun buscarTodos() : Flow<List<Filmes>> = filmesDAO.buscarTodos()
+    suspend fun getAllFilmes(): Flow<List<Filmes>> = filmesDAO.buscarTodos()
 
     suspend fun inserirFilme(filme: Filmes) {
         filmesDAO.inserir(filme)

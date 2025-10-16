@@ -13,8 +13,8 @@ interface FilmesDAO{
     @Insert
     suspend fun inserir(filme: Filmes)
 
-    @Query("SELECT * FROM filmes")
-    suspend fun buscarTodos() : Flow<List<Filmes>>
+    @Query("SELECT * FROM filmes ORDER BY nome ASC")
+    fun buscarTodos(): Flow<List<Filmes>>
 
     @Delete
     suspend fun deletar(filmes: Filmes)

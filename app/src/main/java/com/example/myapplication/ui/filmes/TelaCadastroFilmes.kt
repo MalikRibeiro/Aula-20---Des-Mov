@@ -35,10 +35,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.data.local.AppDatabase
 import com.example.myapplication.data.local.Filmes
+import com.example.myapplication.data.repository.FilmesRepository
 //import com.example.myapplication.data.repository.atualizarFilme
 //import com.example.myapplication.data.repository.buscarFilmes
 //import com.example.myapplication.data.repository.deletarFilme
@@ -48,44 +50,41 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
+//@Preview
 @Composable
-fun TelaCadastroFilmes() {
+fun TelaCadastroFilmes(
+    // A forma correta de instanciar o ViewModel com suas dependências (Repositório).
+    // O Compose se encarrega de manter a mesma instância durante o ciclo de vida da tela.
+    viewModel: FilmesViewModel = viewModel(
+        factory = FilmesViewModelFactory(
+            FilmesRepository(AppDatabase.getDatabase(LocalContext.current).filmesDAO())
+        )
+    )
+) {
 
-    var nome by remember { mutableStateOf("") }
-    var descricao by remember { mutableStateOf("") }
-    var filmes by remember { mutableStateOf<List<Filmes>>(emptyList()) }
 
-    // Estado para controlar qual filme está sendo editado
-    var filmeEmEdicao by remember { mutableStateOf<Filmes?>(null) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    // Texto do botão que muda dependendo da ação (adicionar ou atualizar)
-    val textoBotao = if (filmeEmEdicao == null) "Adicionar Filme" else "Atualizar Filme"
-
-    val contex = LocalContext.current
-    val db = AppDatabase.getDatabase(contex)
-    val filmesDao = db.filmesDAO()
-
-    // Carrega os filmes na primeira vez que a tela é exibida
-    LaunchedEffect(Unit) {
-        //filmes = buscarFilmes(filmesDao)
-    }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
         Card(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp),
             border = BorderStroke(1.dp, Color.Gray),
             colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F0F0))
         ) {
 
             Column(modifier = Modifier.padding(16.dp)) {
                 TextField(
-                    value = nome,
-                    onValueChange = { nome = it },
+                    value = uiState.nome,
+                    onValueChange = { viewModel.onNomeChance(it)},
                     label = { Text("Nome do Filme") },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -93,8 +92,8 @@ fun TelaCadastroFilmes() {
                 Spacer(modifier = Modifier.height(10.dp))
 
                 TextField(
-                    value = descricao,
-                    onValueChange = { descricao = it },
+                    value = uiState.descricao,
+                    onValueChange = { viewModel.onDescricaoChange(it) },
                     label = { Text("Descrição") },
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -104,51 +103,20 @@ fun TelaCadastroFilmes() {
                 Button(
                     modifier = Modifier.align(Alignment.End),
                     onClick = {
-                        if (nome.isNotBlank() && descricao.isNotBlank()) {
-                            CoroutineScope(Dispatchers.IO).launch {
-                                // Verifica se está editando ou adicionando
-                                if (filmeEmEdicao == null) {
-                                    // Adiciona um novo filme
-                                    //inserirFilme(nome, descricao, filmesDao)
-                                } else {
-                                    // Atualiza um filme existente
-                                    val filmeAtualizado = filmeEmEdicao!!.copy(nome = nome, desc = descricao)
-                                    //atualizarFilme(filmeAtualizado, filmesDao)
-                                }
-
-                                // Limpa os campos, reseta o estado de edição e recarrega a lista
-                                nome = ""
-                                descricao = ""
-                                filmeEmEdicao = null
-                                //filmes = buscarFilmes(filmesDao)
-                            }
-                        }
+                        viewModel.onSalvar()
                     }
                 ) {
-                    Text(textoBotao) // Usa o texto dinâmico
+                    Text(uiState.textoBotao) // Usa o texto dinâmico
                 }
             }
         }
 
         LazyColumn {
-            items(filmes) { filme ->
+            items(uiState.listaDeFilmes) { filme ->
                 umFilme(
                     filme = filme,
-
-                    // Ação para o botão de editar
-                    onEdit = { filmeParaEditar ->
-                        nome = filmeParaEditar.nome
-                        descricao = filmeParaEditar.desc
-                        filmeEmEdicao = filmeParaEditar
-                    },
-
-                    // Ação para o botão de deletar
-                    onDelete = { filmeParaDeletar ->
-                        CoroutineScope(Dispatchers.IO).launch {
-                            //deletarFilme(filmeParaDeletar, filmesDao)
-                            //filmes = buscarFilmes(filmesDao)
-                        }
-                    }
+                    onEdit = { viewModel.onEditar(filme) }, // Ação para o botão de editar
+                    onDelete = { viewModel.onDeletar(filme) } // Ação para o botão de deletar
                 )
             }
         }
@@ -158,12 +126,16 @@ fun TelaCadastroFilmes() {
 @Composable
 fun umFilme(filme: Filmes, onEdit: (Filmes) -> Unit, onDelete: (Filmes) -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         elevation = CardDefaults.cardElevation(4.dp),
         border = BorderStroke(1.dp, Color.LightGray)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -180,18 +152,22 @@ fun umFilme(filme: Filmes, onEdit: (Filmes) -> Unit, onDelete: (Filmes) -> Unit)
             Icon(
                 imageVector = Icons.Default.Edit,
                 contentDescription = "Editar",
-                modifier = Modifier.size(24.dp).clickable {
-                    onEdit(filme)
-                }
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable {
+                        onEdit(filme)
+                    }
             )
             Spacer(modifier = Modifier.width(16.dp))
 
             Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Deletar",
-                modifier = Modifier.size(24.dp).clickable {
-                    onDelete(filme)
-                }
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable {
+                        onDelete(filme)
+                    }
             )
         }
     }
